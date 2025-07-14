@@ -85,9 +85,9 @@ export default function Step4TestCaseConfig({
           error={errors.recordCount}
         />
 
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-blue-900 mb-2">Test Case Types:</h3>
-          <ul className="text-sm text-blue-800 space-y-1">
+        <div className="bg-[#E6F1F5] border border-[#B3D6E6] rounded-lg p-4">
+          <h3 className="text-sm font-medium text-[#004F71] mb-2">Test Case Types:</h3>
+          <ul className="text-sm text-[#004F71] space-y-1">
             <li>• <strong>Basic ACH Payment:</strong> Standard single payment records</li>
             <li>• <strong>Batch Processing:</strong> Multiple payments in batch format</li>
             <li>• <strong>Error Scenarios:</strong> Invalid routing numbers, amounts, etc.</li>
@@ -96,8 +96,8 @@ export default function Step4TestCaseConfig({
         </div>
 
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-yellow-900 mb-2">Performance Note:</h3>
-          <p className="text-sm text-yellow-800">
+          <h3 className="text-sm font-medium text-black mb-2">Performance Note:</h3>
+          <p className="text-sm text-black">
             Large record counts may take longer to generate. For testing, we recommend starting with 100-1000 records.
           </p>
         </div>

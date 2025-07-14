@@ -95,9 +95,9 @@ export default function Step1DatabaseConfig({
           error={errors.outputFormat}
         />
 
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-blue-900 mb-2">Output Format Details:</h3>
-          <ul className="text-sm text-blue-800 space-y-1">
+        <div className="bg-[#E6F1F5] border border-[#B3D6E6] rounded-lg p-4">
+          <h3 className="text-sm font-medium text-[#004F71] mb-2">Output Format Details:</h3>
+          <ul className="text-sm text-[#004F71] space-y-1">
             <li><strong>SQL Insert Statements:</strong> Ready-to-execute SQL INSERT statements</li>
             <li><strong>Fixed Width Text File:</strong> Standard ACH file format with fixed-width fields</li>
             <li><strong>NACHA Format File:</strong> NACHA-compliant ACH file with proper headers and trailers</li>

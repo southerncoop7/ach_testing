@@ -31,9 +31,9 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({
               onClick={() => onStepClick(step.id)}
               className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium transition-colors mb-2 ${
                 isCompleted
-                  ? 'bg-green-500 text-white'
+                  ? 'bg-[#249E6B] text-white'
                   : isCurrent
-                  ? 'bg-blue-500 text-white'
+                  ? 'bg-[#004F71] text-white'
                   : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
               }`}
             >
@@ -41,7 +41,7 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({
             </button>
             <div className="text-center">
               <div className={`text-xs font-medium ${
-                isCurrent ? 'text-blue-600' : isCompleted ? 'text-green-600' : 'text-gray-500'
+                isCurrent ? 'text-[#004F71]' : isCompleted ? 'text-[#249E6B]' : 'text-gray-500'
               }`}>
                 {step.title}
               </div>

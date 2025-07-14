@@ -22,21 +22,36 @@ export const Select: React.FC<SelectProps> = ({
   placeholder = 'Select an option',
   error,
 }) => {
+  // Design system values:
+  // Default: bg-white, border-[#DAD7D2], rounded-[4px], text-[#5B6770]
+  // Focus: border-[#004F71], ring-[#004F71]/20
+  // Error: border-[#DD0033], ring-[#DD0033]/20
+  // Font: Apercu (set globally), font-normal, text-base
+  // Spacing: px-3 py-2
+  // Disabled: opacity-60, cursor-not-allowed
+  const base =
+    'w-full px-3 py-2 rounded-[4px] font-normal text-base bg-white border focus:outline-none transition-all duration-150 text-[#5B6770] disabled:opacity-60 disabled:cursor-not-allowed';
+  const focus =
+    'focus:border-[#004F71] focus:ring-2 focus:ring-[#004F71]/20';
+  const errorClass =
+    'border-[#DD0033] focus:border-[#DD0033] focus:ring-2 focus:ring-[#DD0033]/20';
+  const normalClass =
+    'border-[#DAD7D2] ' + focus;
+  const selectClass = `${base} ${error ? errorClass : normalClass}`;
+
   return (
     <div className="space-y-1">
       {label && (
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-[#5B6770]">
           {label}
         </label>
       )}
       <select
-        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-          error 
-            ? 'border-red-500 focus:ring-red-500' 
-            : 'border-gray-300 focus:ring-blue-500'
-        }`}
+        className={selectClass}
         value={value}
         onChange={e => onChange(e.target.value)}
+        aria-invalid={!!error}
+        aria-describedby={error ? `${label}-error` : undefined}
       >
         <option value="" disabled>{placeholder}</option>
         {options.map(opt => (
@@ -46,7 +61,7 @@ export const Select: React.FC<SelectProps> = ({
         ))}
       </select>
       {error && (
-        <p className="text-sm text-red-600">{error}</p>
+        <p className="text-sm text-[#DD0033]" id={label ? `${label}-error` : undefined}>{error}</p>
       )}
     </div>
   );

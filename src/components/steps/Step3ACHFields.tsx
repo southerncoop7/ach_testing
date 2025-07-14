@@ -105,9 +105,9 @@ export default function Step3ACHFields({
           placeholder="Payment description"
         />
 
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-blue-900 mb-2">ACH Field Guidelines:</h3>
-          <ul className="text-sm text-blue-800 space-y-1">
+        <div className="bg-[#E6F1F5] border border-[#B3D6E6] rounded-lg p-4">
+          <h3 className="text-sm font-medium text-[#004F71] mb-2">ACH Field Guidelines:</h3>
+          <ul className="text-sm text-[#004F71] space-y-1">
             <li>• <strong>Routing Number:</strong> 9-digit ABA routing number</li>
             <li>• <strong>Account Number:</strong> Customer&apos;s bank account number</li>
             <li>• <strong>Amount:</strong> Payment amount in dollars and cents</li>
