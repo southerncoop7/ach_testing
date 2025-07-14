@@ -19,9 +19,13 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({
   completedSteps,
   onStepClick,
 }) => {
+  // Map step titles, changing 'ACH Fields' to 'Test Data'
+  const displaySteps = steps.map(step =>
+    step.title === 'ACH Fields' ? { ...step, title: 'Test Data' } : step
+  );
   return (
     <div className="flex items-center justify-between w-full py-4">
-      {steps.map((step) => {
+      {displaySteps.map((step) => {
         const isCompleted = completedSteps.includes(step.id);
         const isCurrent = currentStep === step.id;
         
@@ -40,12 +44,12 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({
               {isCompleted ? '✓' : step.id}
             </button>
             <div className="text-center">
-              <div className={`text-xs font-medium ${
-                isCurrent ? 'text-[#004F71]' : isCompleted ? 'text-[#249E6B]' : 'text-gray-500'
+              <div className={`text-xs font-bold ${
+                isCurrent ? 'text-[#004F71]' : isCompleted ? 'text-[#249E6B]' : 'text-gray-900'
               }`}>
                 {step.title}
               </div>
-              <div className="text-xs text-gray-400 hidden sm:block">
+              <div className="text-xs font-bold text-gray-500 hidden sm:block">
                 {step.description}
               </div>
             </div>

@@ -2,9 +2,17 @@
 
 import { Button } from '@/components/ui';
 import { Select } from '@/components/ui';
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 import type { AppData } from '../../types/application';
+
+// Add required fields for Cleared Checks
+const CLEARED_CHECKS_FIELDS = [
+  { key: 'bankAccountNumber', label: 'Bank Account Number' },
+  { key: 'checkNumber', label: 'Check Number' },
+  { key: 'amount', label: 'Amount' },
+  { key: 'date', label: 'Date (MMDDYY)' },
+];
 
 interface Step2SchemaDefinitionProps {
   data: AppData;
@@ -22,6 +30,36 @@ export default function Step2SchemaDefinition({
 }: Step2SchemaDefinitionProps) {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [saveSchema, setSaveSchema] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
+  const [fieldMapping, setFieldMapping] = useState<{ [key: string]: string }>({});
+  const [showMapping, setShowMapping] = useState(false);
+  const [sqlFields, setSqlFields] = useState<string[]>([]);
+
+  // Helper to extract table name from SQL
+  function extractTableName(sql: string): string | null {
+    // Match CREATE TABLE <name> ( ... ) [;] (semicolon optional, allow incomplete)
+    const match = sql.match(/CREATE\s+TABLE\s+[`'\"]?([\w-]+)[`'\"]?\s*\(/i);
+    return match ? match[1] : null;
+  }
+
+  // Helper to extract field names from CREATE TABLE (even if incomplete)
+  function extractFieldNames(sql: string): string[] {
+    // Find the first CREATE TABLE ... ( ... )
+    const match = sql.match(/CREATE\s+TABLE\s+[`'\"]?[\w-]+[`'\"]?\s*\(([^)]*)/i);
+    if (!match) return [];
+    const fieldsBlock = match[1];
+    // Split by comma, get first word (field name)
+    return fieldsBlock
+      .split(',')
+      .map(line => line.trim().split(/\s+/)[0].replace(/[`'\"]/g, ''))
+      .filter(Boolean);
+  }
+
+  // Check if all required fields are present in SQL fields
+  function getMissingClearedChecksFields(sqlFields: string[], mapping: { [key: string]: string }) {
+    return CLEARED_CHECKS_FIELDS.filter(f => !Object.values(mapping).includes(f.key) && !sqlFields.includes(f.key));
+  }
 
   const handleMethodChange = (value: string) => {
     onUpdate('schemaDefinition', {
@@ -30,18 +68,64 @@ export default function Step2SchemaDefinition({
     });
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setIsLoading(true);
-      // Simulate file processing (e.g., SQL parsing)
-      setTimeout(() => {
+      setSaveMessage('');
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
         onUpdate('schemaDefinition', {
           ...data.schemaDefinition,
-          schema: { fileName: file.name, content: null }
+          schema: { fileName: file.name, content }
         });
+        // If Cleared Checks, check for required fields
+        if (data.databaseConfig?.outputFormat === 'cleared-checks') {
+          const fields = extractFieldNames(content);
+          setSqlFields(fields);
+          // Try to auto-map by name
+          const autoMap: { [key: string]: string } = {};
+          CLEARED_CHECKS_FIELDS.forEach(f => {
+            const found = fields.find(sf => sf.toLowerCase().includes(f.key.toLowerCase()));
+            if (found) autoMap[found] = f.key;
+          });
+          setFieldMapping(autoMap);
+          const missing = getMissingClearedChecksFields(fields, autoMap);
+          if (missing.length > 0) {
+            setShowMapping(true);
+          } else {
+            setShowMapping(false);
+          }
+        }
+        if (saveSchema) {
+          const tableName = extractTableName(content);
+          if (tableName) {
+            localStorage.setItem(`schema_${tableName}`, content);
+            setSaveMessage(`Schema saved locally as 'schema_${tableName}'.`);
+          } else {
+            setSaveMessage('Could not extract table name. Schema not saved.');
+          }
+        }
         setIsLoading(false);
-      }, 1500);
+      };
+      reader.readAsText(file);
+    }
+  };
+
+  // Handle mapping changes
+  const handleMappingChange = (sqlField: string, mappedKey: string) => {
+    setFieldMapping(prev => ({ ...prev, [sqlField]: mappedKey }));
+  };
+
+  // Save mapping locally
+  const handleSaveMapping = () => {
+    if (sqlFields.length && Object.keys(fieldMapping).length >= CLEARED_CHECKS_FIELDS.length) {
+      localStorage.setItem('clearedChecksFieldMapping', JSON.stringify(fieldMapping));
+      setShowMapping(false);
+      setSaveMessage('Field mapping saved locally.');
+    } else {
+      setSaveMessage('Please map all required fields.');
     }
   };
 
@@ -106,6 +190,22 @@ export default function Step2SchemaDefinition({
                   </div>
                 )}
               </div>
+              <div className="flex items-center mt-4">
+                <input
+                  id="save-schema"
+                  type="checkbox"
+                  checked={saveSchema}
+                  onChange={e => setSaveSchema(e.target.checked)}
+                  className="mr-2 h-4 w-4 text-[#004F71] border-gray-300 rounded focus:ring-[#004F71]"
+                  disabled={isLoading}
+                />
+                <label htmlFor="save-schema" className="text-sm text-[#004F71] select-none">
+                  Save uploaded schema locally for future use
+                </label>
+              </div>
+              {saveMessage && (
+                <p className="mt-2 text-sm text-green-600">{saveMessage}</p>
+              )}
               {data.schemaDefinition.schema && !isLoading && (
                 <p className="mt-2 text-sm text-green-600">
                   ✓ File uploaded: {data.schemaDefinition.schema.fileName}
@@ -129,6 +229,32 @@ export default function Step2SchemaDefinition({
           </div>
         )}
 
+        {showMapping && (
+          <div className="mt-4 border-2 border-[#004F71] rounded-lg p-4 bg-white">
+            <h3 className="text-sm font-semibold text-[#004F71] mb-2">Map SQL Columns to Cleared Checks Fields</h3>
+            <p className="text-sm text-[#004F71] mb-2">Some required fields were not found. Please map your SQL columns to the required Cleared Checks fields below:</p>
+            <div className="space-y-2">
+              {(sqlFields.length > 0 ? sqlFields : CLEARED_CHECKS_FIELDS.map(f => f.key)).map(sqlField => (
+                <div key={sqlField} className="flex items-center space-x-2">
+                  <span className="text-sm text-[#004F71] w-40">{sqlField}</span>
+                  <select
+                    className="border border-[#004F71] rounded px-2 py-1 text-sm text-[#004F71] focus:ring-[#004F71] focus:border-[#004F71]"
+                    value={fieldMapping[sqlField] || ''}
+                    onChange={e => handleMappingChange(sqlField, e.target.value)}
+                  >
+                    <option value="">-- Map to --</option>
+                    {CLEARED_CHECKS_FIELDS.map(f => (
+                      <option key={f.key} value={f.key}>{f.label}</option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </div>
+            <Button className="mt-4" variant="primary" onClick={handleSaveMapping}>Save Mapping</Button>
+            {saveMessage && <p className="mt-2 text-sm text-green-600">{saveMessage}</p>}
+          </div>
+        )}
+
         <div className="bg-[#E6F1F5] border border-[#B3D6E6] rounded-lg p-4">
           <h3 className="text-sm font-medium text-[#004F71] mb-2">Schema Requirements:</h3>
           <ul className="text-sm text-[#004F71] space-y-1">
@@ -136,6 +262,7 @@ export default function Step2SchemaDefinition({
             <li>• Should include fields for ACH payment data</li>
             <li>• Supported formats: SQL files (.sql)</li>
             <li>• File size limit: 1MB</li>
+            <li>• Only the CREATE TABLE and field names are needed (with or without a semicolon at the end)</li>
           </ul>
         </div>
       </div>
@@ -150,7 +277,7 @@ export default function Step2SchemaDefinition({
           onClick={handleNext}
           disabled={(data.schemaDefinition.method === 'upload' && (!data.schemaDefinition.schema || isLoading)) || isLoading}
         >
-          Next: ACH Fields
+          Next: Test Data
         </Button>
       </div>
     </div>

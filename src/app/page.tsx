@@ -31,6 +31,7 @@ export default function Home() {
     databaseConfig: { databaseName: '', outputFormat: 'sql' },
     schemaDefinition: { method: 'upload', schema: null },
     achFields: { routingNumber: '', accountNumber: '', amount: '', description: '' },
+    clearedChecksFields: { bankAccountNumber: '', checkNumber: '', amount: '', date: '' },
     testCaseConfig: { testCaseType: 'basic', recordCount: 100 },
     generatedData: null,
     outputFiles: null
@@ -164,15 +165,27 @@ export default function Home() {
           <div className="flex justify-between items-center py-6">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
-                ACH Payment Tester
+                Payment Tester
               </h1>
               <p className="text-sm text-gray-600">
-                Generate ACH payment test data and database insert statements
+                Generate payment test data and database insert statements
               </p>
             </div>
-            <div className="text-right">
-              <div className="text-sm text-gray-500">Step {currentStep} of {STEPS.length}</div>
-              <ProgressBar currentStep={currentStep} totalSteps={6} />
+            <div className="flex items-center space-x-6">
+              <button
+                type="button"
+                className="px-4 py-2 rounded-[6px] font-semibold border border-[#004F71] text-[#004F71] bg-white hover:bg-[#004F71] hover:text-white transition-all duration-150 shadow-sm"
+                onClick={() => {
+                  localStorage.removeItem('achPaymentTesterData');
+                  window.location.reload();
+                }}
+              >
+                Start Over
+              </button>
+              <div className="text-right">
+                <div className="text-sm font-bold text-gray-900">Step {currentStep} of {STEPS.length}</div>
+                <ProgressBar currentStep={currentStep} totalSteps={6} />
+              </div>
             </div>
           </div>
         </div>

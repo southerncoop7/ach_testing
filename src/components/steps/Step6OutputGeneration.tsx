@@ -34,6 +34,9 @@ export default function Step6OutputGeneration({
         files.push('ach_test_data.txt');
       } else if (data.databaseConfig.outputFormat === 'nacha') {
         files.push('ach_test_data.nacha');
+      } else if (data.databaseConfig.outputFormat === 'cleared-checks') {
+        files.push('clearedcheck.txt');
+        files.push('clearedcheck.sql');
       }
       
       setGeneratedFiles(files);
@@ -43,16 +46,111 @@ export default function Step6OutputGeneration({
   };
 
   const downloadFile = (filename: string) => {
-    // Create a mock file content
     let content = '';
     
     if (filename.endsWith('.sql')) {
-      content = `-- ACH Test Data SQL Insert Statements
--- Generated on ${new Date().toLocaleDateString()}
--- Database: ${data.databaseConfig.databaseName}
-
-INSERT INTO ach_payments (routing_number, account_number, amount, description, transaction_date, status) VALUES
-('${data.achFields.routingNumber}', '${data.achFields.accountNumber}', ${data.achFields.amount}, '${data.achFields.description || 'Test Payment'}', '${new Date().toISOString().split('T')[0]}', 'pending');`;
+      content = `-- ACH Test Data SQL Insert Statements\n-- Generated on ${new Date().toLocaleDateString()}\n-- Database: ${data.databaseConfig.databaseName}\n\nINSERT INTO ach_payments (routing_number, account_number, amount, description, transaction_date, status) VALUES\n('${data.achFields.routingNumber}', '${data.achFields.accountNumber}', ${data.achFields.amount}, '${data.achFields.description || 'Test Payment'}', '${new Date().toISOString().split('T')[0]}', 'pending');`;
+    } else if (filename === 'clearedcheck.txt') {
+      // Generate fixed width cleared checks file
+      // Each row: 13 (account) + 10 (check) + 10 (amount) + 6 (date) + 2 spaces = 41
+      // Use data.generatedData.records if available, else fallback to achFields
+      const records = data.generatedData?.records || [
+        {
+          bankAccountNumber: data.achFields.accountNumber || '',
+          checkNumber: '',
+          amount: data.achFields.amount || '',
+          date: '',
+        },
+      ];
+      // Helper type guards
+      function isClearedCheckRecord(r: any): r is { bankAccountNumber: string; checkNumber: string; amount: string; date: string } {
+        return (
+          typeof r.bankAccountNumber === 'string' &&
+          typeof r.checkNumber === 'string' &&
+          typeof r.amount === 'string' &&
+          typeof r.date === 'string'
+        );
+      }
+      function isACHRecord(r: any): r is { accountNumber: string; amount: string; transactionDate: string } {
+        return (
+          typeof r.accountNumber === 'string' &&
+          typeof r.amount === 'string' &&
+          typeof r.transactionDate === 'string'
+        );
+      }
+      function padLeft(val: string | number, len: number) {
+        return val.toString().padStart(len, '0');
+      }
+      function formatAmount(val: string | number) {
+        const num = Math.round(Number(val) * 100);
+        return padLeft(num, 10);
+      }
+      function formatDate(val: string) {
+        if (!val) return '010100';
+        const d = new Date(val);
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const yy = String(d.getFullYear()).slice(-2);
+        return `${mm}${dd}${yy}`;
+      }
+      content = records.map(r => {
+        let acct = '', check = '', amt = '', dt = '';
+        if (isClearedCheckRecord(r)) {
+          acct = padLeft(r.bankAccountNumber, 13);
+          check = padLeft(r.checkNumber, 10);
+          amt = formatAmount(r.amount);
+          dt = formatDate(r.date);
+        } else if (isACHRecord(r)) {
+          acct = padLeft(r.accountNumber, 13);
+          check = padLeft('', 10);
+          amt = formatAmount(r.amount);
+          dt = formatDate(r.transactionDate);
+        }
+        return `${acct}${check}${amt}${dt}  `;
+      }).join('\r\n') + '\r\n\r\n'; // CRLF, blank line at end
+    } else if (filename === 'clearedcheck.sql') {
+      // Generate SQL insert for cleared checks
+      // Table: cleared_checks (bank_account_number, check_number, amount, date)
+      const records = data.generatedData?.records || [
+        {
+          bankAccountNumber: data.achFields.accountNumber || '',
+          checkNumber: '',
+          amount: data.achFields.amount || '',
+          date: '',
+        },
+      ];
+      // Helper type guards
+      function isClearedCheckRecord(r: any): r is { bankAccountNumber: string; checkNumber: string; amount: string; date: string } {
+        return (
+          typeof r.bankAccountNumber === 'string' &&
+          typeof r.checkNumber === 'string' &&
+          typeof r.amount === 'string' &&
+          typeof r.date === 'string'
+        );
+      }
+      function isACHRecord(r: any): r is { accountNumber: string; amount: string; transactionDate: string } {
+        return (
+          typeof r.accountNumber === 'string' &&
+          typeof r.amount === 'string' &&
+          typeof r.transactionDate === 'string'
+        );
+      }
+      content = `-- Cleared Checks SQL Insert\n-- Generated on ${new Date().toLocaleDateString()}\nINSERT INTO cleared_checks (bank_account_number, check_number, amount, date) VALUES\n`;
+      content += records.map(r => {
+        let acct = '', check = '', amt = '', dt = '';
+        if (isClearedCheckRecord(r)) {
+          acct = r.bankAccountNumber;
+          check = r.checkNumber;
+          amt = r.amount;
+          dt = r.date;
+        } else if (isACHRecord(r)) {
+          acct = r.accountNumber;
+          check = '';
+          amt = r.amount;
+          dt = r.transactionDate;
+        }
+        return `('${acct}', '${check}', ${Number(amt) || 0}, '${dt}')`;
+      }).join(',\n') + ';';
     } else if (filename.endsWith('.txt')) {
       content = `${data.achFields.routingNumber.padEnd(9)}${data.achFields.accountNumber.padEnd(17)}${data.achFields.amount.padStart(10)}${(data.achFields.description || 'Test Payment').padEnd(80)}`;
     } else if (filename.endsWith('.nacha')) {

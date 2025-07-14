@@ -90,7 +90,8 @@ export default function Step1DatabaseConfig({
           options={[
             { value: 'sql', label: 'SQL Insert Statements' },
             { value: 'fixed-width', label: 'Fixed Width Text File' },
-            { value: 'nacha', label: 'NACHA Format File' }
+            { value: 'nacha', label: 'NACHA Format File' },
+            { value: 'cleared-checks', label: 'Cleared Checks (Fixed Width)' },
           ]}
           error={errors.outputFormat}
         />

@@ -1,6 +1,6 @@
 export interface DatabaseConfig {
   databaseName: string;
-  outputFormat: 'sql' | 'fixed-width' | 'nacha';
+  outputFormat: 'sql' | 'fixed-width' | 'nacha' | 'cleared-checks';
 }
 
 export interface SchemaDefinition {
@@ -41,10 +41,18 @@ export interface OutputFiles {
   generatedAt: string;
 }
 
+export interface ClearedChecksFields {
+  bankAccountNumber: string;
+  checkNumber: string;
+  amount: string;
+  date: string;
+}
+
 export interface AppData {
   databaseConfig: DatabaseConfig;
   schemaDefinition: SchemaDefinition;
   achFields: ACHFields;
+  clearedChecksFields: ClearedChecksFields;
   testCaseConfig: TestCaseConfig;
   generatedData: GeneratedData | null;
   outputFiles: OutputFiles | null;
