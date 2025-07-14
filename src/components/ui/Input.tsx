@@ -31,7 +31,7 @@ export const Input: React.FC<InputProps> = ({
       )}
       <input
         type={type}
-        className={`${base} ${styles}`}
+        className={`${base} ${styles} text-black`}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}

@@ -1,18 +1,59 @@
-import type { DatabaseConfig } from './database';
-import type { SchemaDefinition } from './database';
+export interface DatabaseConfig {
+  databaseName: string;
+  outputFormat: 'sql' | 'fixed-width' | 'nacha';
+}
 
-export interface AppState {
-  currentStep: number;
-  isStepComplete: (step: number) => boolean;
+export interface SchemaDefinition {
+  method: 'upload' | 'manual';
+  schema: {
+    fileName?: string;
+    content?: string | null;
+  } | null;
+}
+
+export interface ACHFields {
+  routingNumber: string;
+  accountNumber: string;
+  amount: string;
+  description: string;
+}
+
+export interface TestCaseConfig {
+  testCaseType: string;
+  recordCount: number;
+}
+
+export interface GeneratedData {
+  records: Array<{
+    id: number;
+    routingNumber: string;
+    accountNumber: string;
+    amount: string;
+    description: string;
+    transactionDate: string;
+    status: string;
+  }>;
+  totalCount: number;
+}
+
+export interface OutputFiles {
+  files: string[];
+  generatedAt: string;
+}
+
+export interface AppData {
   databaseConfig: DatabaseConfig;
   schemaDefinition: SchemaDefinition;
-  // TODO: Replace 'any' with proper types as they are defined
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  achFields: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  testCaseConfig: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  generatedData: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  outputFiles: any;
+  achFields: ACHFields;
+  testCaseConfig: TestCaseConfig;
+  generatedData: GeneratedData | null;
+  outputFiles: OutputFiles | null;
+}
+
+export interface StepProps {
+  data: AppData;
+  onUpdate: (key: keyof AppData, value: AppData[keyof AppData]) => void;
+  onNext: () => void;
+  onPrevious: () => void;
+  isComplete: boolean;
 } 
