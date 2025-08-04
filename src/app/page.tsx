@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react';
 import type { AppData } from '../types/application';
 
+// UI components for the page layout and step navigation
 import { StepIndicator } from '@/components/ui';
 import { ProgressBar } from '@/components/ui';
 
-// Step components
+// Import all the components for each step in the process
 import Step1DatabaseConfig from '../components/steps/Step1DatabaseConfig';
 import Step2SchemaDefinition from '../components/steps/Step2SchemaDefinition';
 import Step3ACHFields from '../components/steps/Step3ACHFields';
@@ -14,6 +15,10 @@ import Step4TestCaseConfig from '../components/steps/Step4TestCaseConfig';
 import Step5DataGeneration from '../components/steps/Step5DataGeneration';
 import Step6OutputGeneration from '../components/steps/Step6OutputGeneration';
 
+/**
+ * An array defining the steps of the application.
+ * Each object contains an id, title, and description for a step.
+ */
 const STEPS = [
   { id: 1, title: 'Database Config', description: 'Configure database settings' },
   { id: 2, title: 'Schema Definition', description: 'Define or upload schema' },
@@ -23,10 +28,18 @@ const STEPS = [
   { id: 6, title: 'Output', description: 'Download generated files' }
 ];
 
+/**
+ * The main component for the home page.
+ * It manages the state and logic for the multi-step form.
+ */
 export default function Home() {
+  // State to track the current active step
   const [currentStep, setCurrentStep] = useState(1);
+  // State to track which steps have been completed
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+  // State to hold any error messages
   const [error, setError] = useState<string | null>(null);
+  // State to hold all the application data collected across the steps
   const [appData, setAppData] = useState<AppData>({
     databaseConfig: { databaseName: '', outputFormat: 'sql' },
     schemaDefinition: { method: 'upload', schema: null },
@@ -37,7 +50,10 @@ export default function Home() {
     outputFiles: null
   });
 
-  // Load data from localStorage on mount
+  /**
+   * `useEffect` hook to load saved data from localStorage when the component mounts.
+   * This allows the user to resume their session.
+   */
   useEffect(() => {
     const savedData = localStorage.getItem('achPaymentTesterData');
     if (savedData) {
@@ -54,7 +70,10 @@ export default function Home() {
     }
   }, []);
 
-  // Save data to localStorage whenever it changes
+  /**
+   * `useEffect` hook to save the current state to localStorage whenever it changes.
+   * This ensures the user's progress is not lost.
+   */
   useEffect(() => {
     try {
       const dataToSave = {
@@ -69,6 +88,11 @@ export default function Home() {
     }
   }, [appData, currentStep, completedSteps]);
 
+  /**
+   * Updates a specific part of the application data state.
+   * @param {string} key - The key of the appData object to update.
+   * @param {unknown} value - The new value.
+   */
   const updateAppData = (key: string, value: unknown) => {
     setAppData(prev => ({
       ...prev,
@@ -76,12 +100,19 @@ export default function Home() {
     } as AppData));
   };
 
+  /**
+   * Marks a step as complete.
+   * @param {number} step - The step number to mark as complete.
+   */
   const markStepComplete = (step: number) => {
     if (!completedSteps.includes(step)) {
       setCompletedSteps(prev => [...prev, step]);
     }
   };
 
+  /**
+   * Navigates to the next step in the process.
+   */
   const nextStep = () => {
     if (currentStep < STEPS.length) {
       markStepComplete(currentStep);
@@ -89,22 +120,39 @@ export default function Home() {
     }
   };
 
+  /**
+   * Navigates to the previous step in the process.
+   */
   const previousStep = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
   };
 
+  /**
+   * Jumps to a specific step.
+   * @param {number} step - The step number to navigate to.
+   */
   const goToStep = (step: number) => {
     if (step >= 1 && step <= STEPS.length) {
       setCurrentStep(step);
     }
   };
 
+  /**
+   * Checks if a given step is complete.
+   * @param {number} step - The step number to check.
+   * @returns {boolean} - True if the step is complete, false otherwise.
+   */
   const isStepComplete = (step: number) => {
     return completedSteps.includes(step);
   };
 
+  /**
+   * Renders the component for the current active step.
+   * It also includes an error boundary to catch rendering errors in a step.
+   * @returns {JSX.Element} The component for the current step.
+   */
   const renderCurrentStep = () => {
     try {
       const commonProps = {
@@ -159,7 +207,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      {/* Header Section */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
@@ -191,7 +239,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Step Indicator */}
+      {/* Step Indicator Navigation Bar */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <StepIndicator
@@ -203,7 +251,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Error Display */}
+      {/* Global Error Display Area */}
       {error && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="bg-red-50 border border-red-200 rounded-md p-4">
@@ -235,7 +283,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Main Content */}
+      {/* Main Content Area where the current step is rendered */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow">
           {renderCurrentStep()}

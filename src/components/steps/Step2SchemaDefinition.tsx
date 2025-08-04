@@ -1,15 +1,13 @@
-// Step 2: Schema Definition
-// This step allows the user to define the database schema by uploading a SQL file or entering it manually. Handles required field mapping for Cleared Checks.
-
 'use client';
 
-import { Button } from '@/components/ui';
-import { Select } from '@/components/ui';
 import React, { useState, useEffect } from 'react';
-
 import type { AppData } from '../../types/application';
+import { Button, Select } from '@/components/ui';
 
-// Ensure CLEARED_CHECKS_FIELDS includes all 4 required fields
+/**
+ * The required fields for the "Cleared Checks" output format.
+ * These fields must be mapped to columns in the user-provided SQL schema.
+ */
 const CLEARED_CHECKS_FIELDS = [
   { key: 'bankAccountNumber', label: 'Bank Account Number' },
   { key: 'checkNumber', label: 'Check Number' },
@@ -17,12 +15,9 @@ const CLEARED_CHECKS_FIELDS = [
   { key: 'date', label: 'Date (MMDDYY)' },
 ];
 
-// Helper to check if mapping is complete
-function isMappingComplete(map: { [sqlField: string]: string }) {
-  const mappedValues = Object.values(map);
-  return CLEARED_CHECKS_FIELDS.every(f => mappedValues.includes(f.key));
-}
-
+/**
+ * Props for the Step2SchemaDefinition component.
+ */
 interface Step2SchemaDefinitionProps {
   data: AppData;
   onUpdate: (key: string, value: unknown) => void;
@@ -31,126 +26,122 @@ interface Step2SchemaDefinitionProps {
   isComplete: boolean;
 }
 
+/**
+ * Component for Step 2: Schema Definition.
+ * This step allows the user to provide a database schema, either by uploading a SQL file
+ * or by selecting a previously saved schema. If the "Cleared Checks" format is selected,
+ * it also handles mapping the required fields to the schema columns.
+ */
 export default function Step2SchemaDefinition({
   data,
   onUpdate,
   onNext,
   onPrevious
 }: Step2SchemaDefinitionProps) {
+  // State for form validation errors.
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  // State to indicate if a file is being processed.
   const [isLoading, setIsLoading] = useState(false);
-  const [saveSchema, setSaveSchema] = useState(false);
+  // State to show messages to the user (e.g., "Schema saved").
   const [saveMessage, setSaveMessage] = useState('');
-  const [fieldMapping, setFieldMapping] = useState<{ [key: string]: string }>({});
-  const [showMapping, setShowMapping] = useState(false);
-  const [sqlFields, setSqlFields] = useState<string[]>([]);
-  const [savedSchemas, setSavedSchemas] = useState<{ key: string; name: string }[]>([]);
-  const [selectedSchemaKey, setSelectedSchemaKey] = useState<string>('');
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
-  const [showOverwriteConfirm, setShowOverwriteConfirm] = useState<string | null>(null);
-
-  // Add state for current field definitions
-  const [fieldDefs, setFieldDefs] = useState<Array<{ name: string; type: string }>>([]);
+  // State to hold the mapping between Cleared Checks fields and SQL columns.
   const [mapping, setMapping] = useState<{ [sqlField: string]: string }>({});
+  // State to control the visibility of the field mapping UI.
   const [showMappingUI, setShowMappingUI] = useState(false);
+  // State to hold the extracted field definitions from the SQL schema.
+  const [fieldDefs, setFieldDefs] = useState<Array<{ name: string; type: string }>>([]);
+  // State to hold the list of schemas saved in local storage.
+  const [savedSchemas, setSavedSchemas] = useState<{ key: string; name: string }[]>([]);
+  // State to track the currently selected saved schema.
+  const [selectedSchemaKey, setSelectedSchemaKey] = useState<string>('');
+  // State to manage confirmation dialogs for deleting schemas.
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  // State to manage confirmation dialogs for overwriting schemas.
+  const [showOverwriteConfirm, setShowOverwriteConfirm] = useState<string | null>(null);
+  // State for mapping validation errors.
   const [mappingError, setMappingError] = useState('');
 
-  // On mount, load saved schemas from localStorage
+  /**
+   * `useEffect` hook to load saved schemas from local storage on component mount.
+   */
   useEffect(() => {
     const schemas: { key: string; name: string }[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (
-        key &&
-        key.startsWith('schema_') &&
-        !key.startsWith('schema_struct_') &&
-        !key.startsWith('schema_map_')
-      ) {
+      if (key && key.startsWith('schema_') && !key.startsWith('schema_struct_') && !key.startsWith('schema_map_')) {
         schemas.push({ key, name: key.replace('schema_', '') });
-      }
+      } 
     }
     setSavedSchemas(schemas);
   }, []);
 
-  // On mount, if a schema is already selected, load its fieldDefs
-  useEffect(() => {
-    if (selectedSchemaKey) {
-      const schemaContent = localStorage.getItem(selectedSchemaKey);
-      const tableName = selectedSchemaKey.replace('schema_', '');
-      if (schemaContent) {
-        const struct = localStorage.getItem(`schema_struct_${tableName}`);
-        if (struct) {
-          setFieldDefs(JSON.parse(struct));
-        } else {
-          // This case should ideally be handled by handleSchemaSelected, but as a fallback
-          // If the struct is not found, try to parse and save it
-          const fields = extractFieldDefs(schemaContent);
-          setFieldDefs(fields);
-          localStorage.setItem(`schema_struct_${tableName}`, JSON.stringify(fields));
-        }
-      }
-    } else {
-      setFieldDefs([]);
-    }
-  }, [selectedSchemaKey]);
-
-  // Helper to extract table name from SQL for localStorage key
+  /**
+   * Extracts the table name from a `CREATE TABLE` SQL statement.
+   * @param {string} sql - The SQL content.
+   * @returns {string | null} The extracted table name or null if not found.
+   */
   function extractTableName(sql: string): string | null {
-    // Match CREATE TABLE [schema.]table (with or without quotes)
-    // Examples: CREATE TABLE tablename, CREATE TABLE "schema"."table", CREATE TABLE schema.table
-    const match = sql.match(/CREATE\s+TABLE\s+(?:["'`]?\w+["'`]?\.)?["'`]?(\w+)["'`]?(?=\s*\()/i);
+    const match = sql.match(/CREATE\s+TABLE\s+(?:["'`]?\w-["'`]?\.)?["'`]?(\w+)["'`]?(?=\s*\()/i);
     return match ? match[1] : null;
   }
 
-  // Helper to extract field names from CREATE TABLE (even if incomplete)
-  function extractFieldNames(sql: string): string[] {
-    // Find the first CREATE TABLE ... ( ... )
-    const match = sql.match(/CREATE\s+TABLE\s+[`'\"]?[\w-]+[`'\"]?\s*\(([^)]*)/i);
-    if (!match) return [];
-    const fieldsBlock = match[1];
-    // Split by comma, get first word (field name)
-    return fieldsBlock
-      .split(',')
-      .map(line => line.trim().split(/\s+/)[0].replace(/[`'\"]/g, ''))
-      .filter(Boolean);
-  }
-
-  // Helper to extract field names and types from CREATE TABLE
+  /**
+   * Extracts column definitions (name and type) from a `CREATE TABLE` SQL statement.
+   * @param {string} sql - The SQL content.
+   * @returns {Array<{ name: string; type: string }>} An array of column definitions.
+   */
   function extractFieldDefs(sql: string): Array<{ name: string; type: string }> {
-    // Find the first CREATE TABLE ... ( ... )
-    const match = sql.match(/CREATE\s+TABLE\s+(?:["'`]?[\w]+["'`]?(?:\.["'`]?[\w]+["'`]?)?)\s*\(([^)]*)/i);
-    if (!match) return [];
-    const fieldsBlock = match[1];
-    // Split by comma, ignore constraints (PRIMARY KEY, etc.)
-    return fieldsBlock
-      .split(',')
+    const createTableMatch = sql.match(/CREATE\s+TABLE\s+[\s\S]*?\(/i);
+    if (!createTableMatch) return [];
+    let startIdx = createTableMatch.index! + createTableMatch[0].length - 1;
+    let depth = 1;
+    let endIdx = startIdx;
+    while (endIdx < sql.length && depth > 0) {
+      endIdx++;
+      if (sql[endIdx] === '(') depth++;
+      else if (sql[endIdx] === ')') depth--;
+    }
+    if (depth !== 0) return [];
+    const fieldsBlock = sql.slice(startIdx + 1, endIdx).trim();
+
+    const fields: string[] = [];
+    let field = '';
+    let parenDepth = 0;
+    let inQuotes = false;
+    for (let i = 0; i < fieldsBlock.length; i++) {
+      const char = fieldsBlock[i];
+      if (char === '"') inQuotes = !inQuotes;
+      if (!inQuotes) {
+        if (char === '(') parenDepth++;
+        if (char === ')') parenDepth--;
+        if (char === ',' && parenDepth === 0) {
+          fields.push(field.trim());
+          field = '';
+          continue;
+        }
+      }
+      field += char;
+    }
+    if (field.trim()) fields.push(field.trim());
+
+    const columns = fields
       .map(line => {
-        const parts = line.trim().split(/\s+/);
-        // Only consider lines that look like: name type ...
-        if (parts.length < 2) return null;
-        const name = parts[0].replace(/[`'"\[\]]/g, '');
-        const type = parts[1].replace(/[`'"\[\]]/g, '');
-        // Ignore constraint lines
-        if (/^(PRIMARY|FOREIGN|UNIQUE|CONSTRAINT|KEY)$/i.test(name)) return null;
+        const clean = line.trim().replace(/,$/, '');
+        if (/^(CONSTRAINT|PRIMARY|FOREIGN|UNIQUE|KEY|CHECK|INDEX|REFERENCES)\b/i.test(clean)) return null;
+        const match = clean.match(/^"([^"]+)"\s+([A-Z0-9_]+(?:\([^\)]*\))?)/i) || clean.match(/^([A-Z0-9_]+)\s+([A-Z0-9_]+(?:\([^\)]*\))?)/i);
+        if (!match) return null;
+        let name = match[1];
+        let type = match[2];
         return { name, type };
       })
       .filter(Boolean) as Array<{ name: string; type: string }>;
+    return columns;
   }
 
-  // Check if all required fields are present in SQL fields or mapping
-  function getMissingClearedChecksFields(sqlFields: string[], mapping: { [key: string]: string }) {
-    return CLEARED_CHECKS_FIELDS.filter(f => !Object.values(mapping).includes(f.key) && !sqlFields.includes(f.key));
-  }
-
-  // Handler for schema method select (upload/manual)
-  const handleMethodChange = (value: string) => {
-    onUpdate('schemaDefinition', {
-      ...data.schemaDefinition,
-      method: value
-    });
-  };
-
-  // Handler for selecting a saved schema
+  /**
+   * Handles the selection of a saved schema from the dropdown.
+   * @param {string} value - The key of the selected schema.
+   */
   const handleSavedSchemaChange = (value: string) => {
     setSelectedSchemaKey(value);
     if (value) {
@@ -167,9 +158,14 @@ export default function Step2SchemaDefinition({
     }
   };
 
-  // Handler for deleting a saved schema
+  /**
+   * Handles the deletion of a saved schema.
+   * @param {string} key - The key of the schema to delete.
+   */
   const handleDeleteSchema = (key: string) => {
     localStorage.removeItem(key);
+    localStorage.removeItem(`schema_struct_${key.replace('schema_', '')}`);
+    localStorage.removeItem(`schema_map_${key.replace('schema_', '')}`);
     setSavedSchemas(prev => prev.filter(s => s.key !== key));
     if (selectedSchemaKey === key) {
       setSelectedSchemaKey('');
@@ -178,7 +174,9 @@ export default function Step2SchemaDefinition({
     setShowDeleteConfirm(null);
   };
 
-  // Handler for confirming overwrite
+  /**
+   * Handles the confirmation to overwrite an existing schema.
+   */
   const handleConfirmOverwrite = () => {
     if (showOverwriteConfirm) {
       const content = data.schemaDefinition.schema?.content || '';
@@ -195,7 +193,10 @@ export default function Step2SchemaDefinition({
     }
   };
 
-  // Handler for file upload (with overwrite check)
+  /**
+   * Handles the file upload event for the SQL schema.
+   * @param {React.ChangeEvent<HTMLInputElement>} event - The file input change event.
+   */
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -212,17 +213,16 @@ export default function Step2SchemaDefinition({
             setIsLoading(false);
             return;
           }
-          // Save new schema
           localStorage.setItem(key, content);
           setSavedSchemas(prev => [...prev, { key, name: tableName }]);
           setSelectedSchemaKey(key);
           onUpdate('schemaDefinition', {
             ...data.schemaDefinition,
-            schema: { fileName: tableName + '.sql', content },
+            schema: { fileName: file.name, content },
             method: 'upload',
           });
           setSaveMessage(`Schema saved locally as 'schema_${tableName}'.`);
-          handleSchemaSelected(content, tableName, true); // force mapping UI
+          handleSchemaSelected(content, tableName, true);
         } else {
           setSaveMessage('Could not extract table name. Schema not saved.');
         }
@@ -232,16 +232,20 @@ export default function Step2SchemaDefinition({
     }
   };
 
-  // Handler for mapping changes in the Cleared Checks mapping UI
-  // Update mapping logic: mapping is { [clearedChecksFieldKey]: sqlFieldName }
+  /**
+   * Handles changes to the field mapping for Cleared Checks.
+   * @param {string} clearedKey - The key of the Cleared Checks field.
+   * @param {string} sqlField - The name of the SQL field to map to.
+   */
   const handleMappingChange = (clearedKey: string, sqlField: string) => {
     setMapping(prev => ({ ...prev, [clearedKey]: sqlField }));
   };
 
-  // Handler to save mapping (now inside the component)
+  /**
+   * Saves the field mapping to local storage.
+   */
   const handleSaveMapping = () => {
     const tableName = extractTableName(data.schemaDefinition.schema?.content || '') || '';
-    // All 4 required fields must be mapped to a non-empty SQL field
     const allMapped = CLEARED_CHECKS_FIELDS.every(f => mapping[f.key] && mapping[f.key].trim() !== '');
     if (!allMapped) {
       setMappingError('Please map all required Cleared Checks fields.');
@@ -252,42 +256,53 @@ export default function Step2SchemaDefinition({
     setMappingError('');
   };
 
-  // Handler for Next button
-  const handleNext = () => {
-    if (data.schemaDefinition.method === 'upload' && !data.schemaDefinition.schema) {
-      setErrors({ schema: 'Please upload a schema file' });
-      return;
-    }
-    onNext();
-  };
-
-  // After schema upload or selection, parse and save field structure
-  // When loading a saved mapping, ensure it is in the correct format
+  /**
+   * Handles the logic after a schema is selected or uploaded.
+   * @param {string} schemaContent - The content of the SQL schema.
+   * @param {string} tableName - The name of the table in the schema.
+   * @param {boolean} [forceMapping=false] - Whether to force the mapping UI to be shown.
+   */
   function handleSchemaSelected(schemaContent: string, tableName: string, forceMapping = false) {
     const fields = extractFieldDefs(schemaContent);
     setFieldDefs(fields);
-    // Check for existing mapping
+    localStorage.setItem(`schema_struct_${tableName}`, JSON.stringify(fields));
+
     const mappingKey = `schema_map_${tableName}`;
     const savedMapping = localStorage.getItem(mappingKey);
     if (!savedMapping || forceMapping) {
       setShowMappingUI(true);
-      // Try to auto-map by name
       const autoMap: { [key: string]: string } = {};
       CLEARED_CHECKS_FIELDS.forEach(req => {
         const match = fields.find(f => f.name.toLowerCase().includes(req.key.toLowerCase()));
         if (match) autoMap[req.key] = match.name;
       });
       setMapping(autoMap);
-      return;
     } else {
-      // Ensure mapping is { [clearedChecksFieldKey]: sqlFieldName }
-      const loaded = JSON.parse(savedMapping);
-      setMapping(loaded);
+      setMapping(JSON.parse(savedMapping));
       setShowMappingUI(false);
     }
-    // Save to localStorage for use in Step 6
-    localStorage.setItem(`schema_struct_${tableName}`, JSON.stringify(fields));
   }
+
+  /**
+   * Handles the click event for the "Next" button.
+   */
+  const handleNext = () => {
+    if (data.databaseConfig.outputFormat === 'cleared-checks') {
+      if (!data.schemaDefinition.schema) {
+        setErrors({ schema: 'Please upload or select a schema file.' });
+        return;
+      }
+      if (showMappingUI) {
+        setMappingError('Please save the field mapping before proceeding.');
+        return;
+      }
+    }
+    onNext();
+  };
+
+  const plausibleFieldDefs = fieldDefs.filter(f =>
+    /account|check|amount|date/i.test(f.name)
+  );
 
   return (
     <div className="p-8">
@@ -296,94 +311,83 @@ export default function Step2SchemaDefinition({
           Schema Definition
         </h2>
         <p className="text-gray-600">
-          Choose or upload a SQL schema for Cleared Checks.
+          {data.databaseConfig.outputFormat === 'cleared-checks'
+            ? 'Upload or select a SQL schema for Cleared Checks.'
+            : 'This step is optional for the selected output format.'}
         </p>
       </div>
 
-      {data.databaseConfig.outputFormat === 'cleared-checks' && (
+      {data.databaseConfig.outputFormat === 'cleared-checks' ? (
         <div className="space-y-6">
-          {/* Saved Schemas Section */}
           {savedSchemas.length > 0 && (
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Saved Schemas</label>
               <Select
-                label="Select Saved Schema"
+                label="Select a Saved Schema"
                 value={selectedSchemaKey}
                 onChange={handleSavedSchemaChange}
                 options={[
-                  { value: '', label: '-- Select a saved schema --' },
+                  { value: '', label: '-- Or select a saved schema --' },
                   ...savedSchemas.map(s => ({ value: s.key, label: s.name }))
                 ]}
               />
-              <div className="mt-2 space-y-1">
-                {savedSchemas.map(s => (
-                  <div key={s.key} className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-700">{s.name}</span>
-                    <Button
-                      variant="secondary"
-                      onClick={() => setShowDeleteConfirm(s.key)}
-                    >
-                      Delete
-                    </Button>
-                    {showDeleteConfirm === s.key && (
-                      <span className="ml-2 text-sm">
-                        Delete this schema?&nbsp;
-                        <Button variant="primary" onClick={() => handleDeleteSchema(s.key)}>Yes</Button>
-                        <Button variant="secondary" onClick={() => setShowDeleteConfirm(null)}>No</Button>
-                      </span>
-                    )}
+              {selectedSchemaKey && (
+                 <Button
+                    variant="secondary"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() => setShowDeleteConfirm(selectedSchemaKey)}
+                  >
+                    Delete Selected Schema
+                  </Button>
+              )}
+               {showDeleteConfirm && (
+                  <div className="mt-2 text-sm">
+                    <span>Delete this schema?&nbsp;</span>
+                    <Button variant="danger" size="sm" onClick={() => handleDeleteSchema(showDeleteConfirm)}>Yes, Delete</Button>
+                    <Button variant="secondary" size="sm" onClick={() => setShowDeleteConfirm(null)}>No</Button>
                   </div>
-                ))}
-              </div>
+                )}
             </div>
           )}
 
-          {/* File upload UI for schema */}
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Upload SQL Schema File
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Upload SQL Schema File
+            </label>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+              <input
+                type="file"
+                accept=".sql"
+                onChange={handleFileUpload}
+                className="hidden"
+                id="schema-file"
+                disabled={isLoading}
+              />
+              <label htmlFor="schema-file" className={`cursor-pointer ${isLoading ? 'opacity-50 pointer-events-none' : ''}` }>
+                <div className="text-gray-600">
+                  <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <p className="mt-2">Click to upload SQL schema file</p>
+                  <p className="text-xs text-gray-500">Supports .sql files</p>
+                </div>
               </label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                <input
-                  type="file"
-                  accept=".sql"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  id="schema-file"
-                  disabled={isLoading}
-                />
-                <label htmlFor="schema-file" className={`cursor-pointer ${isLoading ? 'opacity-50 pointer-events-none' : ''}` }>
-                  <div className="text-gray-600">
-                    <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                      <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    <p className="mt-2">Click to upload SQL schema file</p>
-                    <p className="text-xs text-gray-500">Supports .sql files</p>
-                  </div>
-                </label>
-                {isLoading && (
-                  <div className="mt-4 flex flex-col items-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-                    <span className="text-blue-600 text-sm">Processing file...</span>
-                  </div>
-                )}
-              </div>
-              {saveMessage && (
-                <p className="mt-2 text-sm text-green-600">{saveMessage}</p>
-              )}
-              {data.schemaDefinition.schema && !isLoading && (
-                <p className="mt-2 text-sm text-green-600">
-                  ✓ File uploaded: {data.schemaDefinition.schema.fileName}
-                </p>
-              )}
-              {errors.schema && (
-                <p className="mt-2 text-sm text-red-600">{errors.schema}</p>
+              {isLoading && (
+                <div className="mt-4 flex flex-col items-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+                  <span className="text-blue-600 text-sm">Processing file...</span>
+                </div>
               )}
             </div>
+            {saveMessage && <p className="mt-2 text-sm text-green-600">{saveMessage}</p>}
+            {data.schemaDefinition.schema && !isLoading && (
+              <p className="mt-2 text-sm text-green-600">
+                ✓ File uploaded: {data.schemaDefinition.schema.fileName}
+              </p>
+            )}
+            {errors.schema && <p className="mt-2 text-sm text-red-600">{errors.schema}</p>}
           </div>
 
-          {/* Overwrite confirmation dialog */}
           {showOverwriteConfirm && (
             <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <span className="text-yellow-900 text-sm">
@@ -391,69 +395,61 @@ export default function Step2SchemaDefinition({
               </span>
               <div className="mt-2 flex space-x-2">
                 <Button variant="primary" onClick={handleConfirmOverwrite}>Yes, Overwrite</Button>
-                <Button variant="secondary" onClick={() => setShowOverwriteConfirm(null)}>No, Use Existing</Button>
+                <Button variant="secondary" onClick={() => setShowOverwriteConfirm(null)}>No, Cancel</Button>
               </div>
             </div>
           )}
 
-          <div className="bg-[#E6F1F5] border border-[#B3D6E6] rounded-lg p-4">
-            <h3 className="text-sm font-medium text-[#004F71] mb-2">Schema Requirements:</h3>
-            <ul className="text-sm text-[#004F71] space-y-1">
-              <li>• Must contain CREATE TABLE statements</li>
-              <li>• Should include fields for ACH payment data</li>
-              <li>• Supported formats: SQL files (.sql)</li>
-              <li>• File size limit: 1MB</li>
-              <li>• Only the CREATE TABLE and field names are needed (with or without a semicolon at the end)</li>
-            </ul>
-          </div>
-        </div>
-      )}
-      {(
-        <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <h4 className="text-sm font-semibold text-yellow-900 mb-2">Map Cleared Checks Fields to SQL Fields</h4>
-          <p className="text-sm text-yellow-800 mb-2">Please map each required Cleared Checks field to a SQL field from your schema:</p>
-          <div className="space-y-2">
-            {CLEARED_CHECKS_FIELDS.map(f => (
-              <div key={f.key} className="flex items-center space-x-2">
-                <span className="text-sm text-gray-900 w-40">{f.label}</span>
-                <select
-                  className="border border-[#004F71] rounded px-2 py-1 text-sm text-[#004F71] focus:ring-[#004F71] focus:border-[#004F71]"
-                  value={mapping[f.key] || ''}
-                  onChange={e => handleMappingChange(f.key, e.target.value)}
-                >
-                  <option value="">-- Select SQL Field --</option>
-                  {fieldDefs.map(fd => (
-                    <option key={fd.name} value={fd.name}>{fd.name} ({fd.type})</option>
-                  ))}
-                </select>
+          {showMappingUI && (
+            <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <h4 className="text-sm font-semibold text-yellow-900 mb-2">Map Cleared Checks Fields to SQL Fields</h4>
+              <p className="text-sm text-yellow-800 mb-2">Please map each required Cleared Checks field to a SQL field from your schema:</p>
+              <div className="space-y-2">
+                {CLEARED_CHECKS_FIELDS.map(f => (
+                  <div key={f.key} className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-900 w-40">{f.label}</span>
+                    <select
+                      className="border border-gray-300 rounded px-2 py-1 text-sm"
+                      value={mapping[f.key] || ''}
+                      onChange={e => handleMappingChange(f.key, e.target.value)}
+                    >
+                      <option value="">-- Select SQL Field --</option>
+                      {plausibleFieldDefs.map(fd => (
+                        <option key={fd.name} value={fd.name}>{fd.name} ({fd.type})</option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          {mappingError && <p className="mt-2 text-sm text-red-600">{mappingError}</p>}
-          <Button className="mt-4" variant="primary" onClick={handleSaveMapping}>
-            Save Mapping
-          </Button>
+              {mappingError && <p className="mt-2 text-sm text-red-600">{mappingError}</p>}
+              <Button className="mt-4" variant="primary" onClick={handleSaveMapping}>
+                Save Mapping
+              </Button>
+            </div>
+          )}
+
+          {!showMappingUI && fieldDefs.length > 0 && Object.keys(mapping).length > 0 && (
+            <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <h4 className="text-sm font-semibold text-gray-900 mb-2">Mapped Fields</h4>
+              <ul className="text-sm text-gray-800 space-y-1">
+                {CLEARED_CHECKS_FIELDS.map(f => {
+                  const sqlField = mapping[f.key];
+                  const field = fieldDefs.find(fieldDef => fieldDef.name === sqlField);
+                  return sqlField && field ? (
+                    <li key={f.key}>
+                      <span className="font-semibold">{f.label}:</span> {sqlField} <span className="text-gray-500">({field.type})</span>
+                    </li>
+                  ) : null;
+                })}
+              </ul>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="text-gray-600">
+          No schema definition is required for the '{data.databaseConfig.outputFormat}' output format.
         </div>
       )}
-      {/* Only show mapped fields summary if mapping exists and mapping UI is not shown */}
-      {!showMappingUI && fieldDefs.length > 0 && mapping && CLEARED_CHECKS_FIELDS.every(f => mapping[f.key]) ? (
-        <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
-          <h4 className="text-sm font-semibold text-gray-900 mb-2">Mapped Fields</h4>
-          <ul className="text-sm text-gray-800 space-y-1">
-            {CLEARED_CHECKS_FIELDS.map(f => {
-              const sqlField = mapping[f.key];
-              const field = fieldDefs.find(fieldDef => fieldDef.name === sqlField);
-              return sqlField && field ? (
-                <li key={f.key}>
-                  <span className="font-mono">{f.label}</span> 
-                  <span className="font-mono">{sqlField}</span> 
-                  <span className="text-gray-500">({field.type})</span>
-                </li>
-              ) : null;
-            })}
-          </ul>
-        </div>
-      ) : null}
 
       <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
         <Button variant="secondary" onClick={onPrevious}>
@@ -463,16 +459,11 @@ export default function Step2SchemaDefinition({
         <Button
           variant="primary"
           onClick={handleNext}
-          disabled={
-            (data.schemaDefinition.method === 'upload' && (!data.schemaDefinition.schema || isLoading)) ||
-            isLoading ||
-            (data.databaseConfig.outputFormat === 'cleared-checks' && (showMappingUI || !isMappingComplete(mapping)))
-          }
+          disabled={isLoading || (data.databaseConfig.outputFormat === 'cleared-checks' && (showMappingUI || !data.schemaDefinition.schema))}
         >
-          Next: Test Data
+          Next: ACH Fields
         </Button>
       </div>
     </div>
   );
 }
-// End of Step 2 

@@ -1,13 +1,36 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  /**
+   * The `content` array tells Tailwind CSS which files to scan for class names.
+   * This is crucial for tree-shaking unused styles and keeping the final CSS bundle small.
+   *
+   * @see https://tailwindcss.com/docs/content-configuration
+   */
   content: [
     './src/**/*.{js,ts,jsx,tsx}',
     './src/app/**/*.{js,ts,jsx,tsx}',
     './src/components/**/*.{js,ts,jsx,tsx}',
     './src/pages/**/*.{js,ts,jsx,tsx}',
   ],
+
+  /**
+   * The `theme` object is where you define your project's color palette, type scale,
+   * fonts, breakpoints, border radius values, and more.
+   *
+   * @see https://tailwindcss.com/docs/theme
+   */
   theme: {
+    /**
+     * The `extend` key allows you to add new values to Tailwind's default theme
+     * without overriding them entirely.
+     *
+     * @see https://tailwindcss.com/docs/theme#extending-the-default-theme
+     */
     extend: {
+      /**
+       * Custom font families for the project.
+       * The `sans` key defines the default sans-serif font stack.
+       */
       fontFamily: {
         sans: [
           'Apercu',
@@ -17,6 +40,10 @@ module.exports = {
           'sans-serif',
         ],
       },
+      /**
+       * Custom color palette for the project.
+       * These colors can be used with Tailwind's utility classes (e.g., `bg-primary`, `text-danger`).
+       */
       colors: {
         primary: '#3EB1C8',
         primaryDark: '#00635B',
@@ -33,11 +60,17 @@ module.exports = {
         white: '#FFFFFF',
         purple: '#994878',
       },
+      /**
+       * Custom border radius values for elements like cards and buttons.
+       */
       borderRadius: {
         card: '8px',
         button: '6px',
         badge: '12px',
       },
+      /**
+       * Custom box shadow values for creating depth and elevation.
+       */
       boxShadow: {
         card: '0 2px 8px rgba(91, 103, 112, 0.1)',
         cardHover: '0 4px 16px rgba(91, 103, 112, 0.15)',
@@ -47,5 +80,12 @@ module.exports = {
       },
     },
   },
+
+  /**
+   * The `plugins` array allows you to register third-party plugins with Tailwind CSS.
+   * Plugins can add new utilities, components, or base styles.
+   *
+   * @see https://tailwindcss.com/docs/plugins
+   */
   plugins: [],
-}; 
+};
