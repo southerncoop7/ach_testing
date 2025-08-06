@@ -37,7 +37,7 @@ export const Input: React.FC<InputProps> = ({
   id,
 }) => {
   const baseStyles =
-    'w-full px-3 py-2 rounded-[4px] font-normal text-base bg-white border focus:outline-none transition-all duration-150 text-[#5B6770] placeholder:text-[#5B6770] placeholder:opacity-60 disabled:opacity-60 disabled:cursor-not-allowed';
+    'w-full px-3 py-2 rounded-[4px] font-normal text-base bg-white border focus:outline-none transition-all duration-150 text-[#5B6770] placeholder:text-[#5B6770] placeholder:opacity-60 disabled:opacity-60 disabled:cursor-not-allowed dark:bg-gray-700 dark:text-white dark:border-gray-600';
   
   const focusStyles =
     'focus:border-[#3EB1C8] focus:ring-2 focus:ring-[#3EB1C8]/20';
@@ -45,7 +45,7 @@ export const Input: React.FC<InputProps> = ({
   const errorStyles =
     'border-[#DD0033] focus:border-[#DD0033] focus:ring-2 focus:ring-[#DD0033]/20';
   
-  const normalStyles = `border-[#DAD7D2] ${focusStyles}`;
+  const normalStyles = `border-[#DAD7D2] ${focusStyles} dark:border-gray-600`;
 
   const inputClasses = `${baseStyles} ${error ? errorStyles : normalStyles}`;
 
@@ -54,7 +54,7 @@ export const Input: React.FC<InputProps> = ({
   return (
     <div className={`space-y-1 ${className}`}>
       {label && (
-        <label htmlFor={inputId} className="block text-sm font-medium text-[#5B6770]">
+        <label htmlFor={inputId} className="block text-sm font-medium text-[#5B6770] dark:text-gray-300">
           {label}
         </label>
       )}
@@ -69,7 +69,7 @@ export const Input: React.FC<InputProps> = ({
         aria-describedby={error ? `${inputId}-error` : undefined}
       />
       {error && (
-        <p id={error ? `${inputId}-error` : undefined} className="text-sm text-[#DD0033]">
+        <p id={error ? `${inputId}-error` : undefined} className="text-sm text-[#DD0033] dark:text-danger">
           {error}
         </p>
       )}

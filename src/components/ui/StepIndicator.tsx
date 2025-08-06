@@ -51,7 +51,7 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({
               {/* Render the connector line between steps */}
               {stepIdx !== 0 && (
                 <div className="absolute inset-0 top-5 left-0 w-full h-0.5" aria-hidden="true">
-                  <div className={`h-full w-full ${isCompleted || isCurrent ? 'bg-success' : 'bg-gray-400'}`} />
+                  <div className={`h-full w-full ${isCompleted || isCurrent ? 'bg-success' : 'bg-gray-400 dark:bg-gray-600'}`} />
                 </div>
               )}
 
@@ -66,7 +66,7 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({
                         ? 'bg-success text-white'
                         : isCurrent
                         ? 'bg-primary text-white ring-4 ring-primary/20'
-                        : 'bg-gray-400 text-gray-600 hover:bg-gray-500'
+                        : 'bg-gray-400 text-gray-600 hover:bg-gray-500 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500'
                     }`}
                   >
                     {isCompleted ? (
@@ -79,11 +79,11 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({
                   </div>
                   <div className="text-center mt-2">
                     <p className={`text-sm font-bold ${
-                      isCurrent ? 'text-primary' : isCompleted ? 'text-success' : 'text-gray-900'
+                      isCurrent ? 'text-primary' : isCompleted ? 'text-success' : 'text-gray-900 dark:text-gray-300'
                     }`}>
                       {step.title}
                     </p>
-                    <p className="text-xs text-gray-500 hidden sm:block">
+                    <p className="text-xs text-gray-500 hidden sm:block dark:text-gray-400">
                       {step.description}
                     </p>
                   </div>

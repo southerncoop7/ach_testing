@@ -2,8 +2,8 @@
  * Defines the configuration for the database, including its name and the desired output format.
  */
 export interface DatabaseConfig {
-  databaseName: string;
-  outputFormat: 'sql' | 'fixed-width' | 'nacha' | 'cleared-checks';
+  tableName: string;
+  outputFormat: 'ach' | 'ach-return' | 'cleared-check' | 'origination-reject';
 }
 
 /**
@@ -40,7 +40,7 @@ export interface TestCaseConfig {
  * Defines the structure for the generated data, including the records and the total count.
  */
 export interface GeneratedData {
-  records: Array<any>; // The actual records can have different shapes
+  records: Array<Record<string, unknown>>; // The actual records can have different shapes
   totalCount: number;
 }
 
@@ -74,6 +74,10 @@ export interface AppData {
   testCaseConfig: TestCaseConfig;
   generatedData: GeneratedData | null;
   outputFiles: OutputFiles | null;
+  clearedChecksData?: {
+    pastedData: string;
+    parsedData?: Record<string, string>[];
+  };
 }
 
 /**

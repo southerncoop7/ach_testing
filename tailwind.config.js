@@ -12,6 +12,7 @@ module.exports = {
     './src/components/**/*.{js,ts,jsx,tsx}',
     './src/pages/**/*.{js,ts,jsx,tsx}',
   ],
+  darkMode: 'class',
 
   /**
    * The `theme` object is where you define your project's color palette, type scale,
@@ -59,6 +60,22 @@ module.exports = {
         neutralLight: '#DAD7D2',
         white: '#FFFFFF',
         purple: '#994878',
+        dark: {
+          primary: '#3EB1C8',
+          primaryDark: '#00635B',
+          success: '#249E6B',
+          successLight: '#B3CFAE',
+          warning: '#FFB549',
+          warningLight: '#F5E1A4',
+          danger: '#DD0033',
+          dangerDark: '#940929',
+          accent: '#E35205',
+          accentLight: '#F8C1B8',
+          neutral: '#DAD7D2',
+          neutralLight: '#5B6770',
+          'background': '#000080',
+          'foreground': '#ededed',
+        },
       },
       /**
        * Custom border radius values for elements like cards and buttons.

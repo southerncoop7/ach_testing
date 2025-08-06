@@ -32,7 +32,7 @@ type AppAction =
  * The initial state of the application.
  */
 const initialState: AppData = {
-  databaseConfig: { databaseName: '', outputFormat: 'sql' },
+  databaseConfig: { tableName: '', outputFormat: 'ach' },
   schemaDefinition: { method: 'upload', schema: null },
   achFields: { routingNumber: '', accountNumber: '', amount: '', description: '' },
   clearedChecksFields: { bankAccountNumber: '', checkNumber: '', amount: '', date: '' },

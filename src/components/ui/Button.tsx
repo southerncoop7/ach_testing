@@ -40,9 +40,9 @@ export const Button: React.FC<ButtonProps> = ({
   };
 
   const variantStyles = {
-    primary: 'bg-[#004F71] text-white shadow-[0_2px_4px_rgba(0,79,113,0.2)] hover:bg-[#00344A] hover:shadow-[0_4px_8px_rgba(0,79,113,0.3)] active:bg-[#00344A] active:translate-y-[1px] border-none focus:ring-[#004F71]',
-    secondary: 'bg-white text-[#004F71] border border-[#004F71] hover:bg-[#004F71] hover:text-white focus:ring-[#004F71]',
-    danger: 'bg-red-600 text-white shadow-[0_2px_4px_rgba(220,53,69,0.2)] hover:bg-red-700 hover:shadow-[0_4px_8px_rgba(220,53,69,0.3)] active:bg-red-800 active:translate-y-[1px] border-none focus:ring-red-500',
+    primary: 'bg-[#004F71] text-white shadow-[0_2px_4px_rgba(0,79,113,0.2)] hover:bg-[#00344A] hover:shadow-[0_4px_8px_rgba(0,79,113,0.3)] active:bg-[#00344A] active:translate-y-[1px] border-none focus:ring-[#004F71] dark:bg-primary dark:hover:bg-primaryDark',
+    secondary: 'bg-white text-[#004F71] border border-[#004F71] hover:bg-[#004F71] hover:text-white focus:ring-[#004F71] dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600',
+    danger: 'bg-red-600 text-white shadow-[0_2px_4px_rgba(220,53,69,0.2)] hover:bg-red-700 hover:shadow-[0_4px_8px_rgba(220,53,69,0.3)] active:bg-red-800 active:translate-y-[1px] border-none focus:ring-red-500 dark:bg-danger dark:hover:bg-dangerDark',
   };
 
   return (

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { AppProvider } from '@/lib/context/AppContext';
+import { ThemeProvider } from '@/lib/context/ThemeContext';
 
 /**
  * The Geist font for sans-serif text.
@@ -49,12 +49,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 dark:bg-dark-background text-neutral dark:text-dark-foreground`}
       >
-        {/* The AppProvider wraps the entire application, making the global state available to all components. */}
-        <AppProvider>
+        <ThemeProvider>
           {children}
-        </AppProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

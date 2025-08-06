@@ -3,30 +3,20 @@
 import { useState, useEffect } from 'react';
 import type { AppData } from '../types/application';
 
+
+
 // UI components for the page layout and step navigation
 import { StepIndicator } from '@/components/ui';
 import { ProgressBar } from '@/components/ui';
 
 // Import all the components for each step in the process
-import Step1DatabaseConfig from '../components/steps/Step1DatabaseConfig';
+import Step1FileSelection from '../components/steps/Step1FileSelection';
 import Step2SchemaDefinition from '../components/steps/Step2SchemaDefinition';
 import Step3ACHFields from '../components/steps/Step3ACHFields';
-import Step4TestCaseConfig from '../components/steps/Step4TestCaseConfig';
 import Step5DataGeneration from '../components/steps/Step5DataGeneration';
 import Step6OutputGeneration from '../components/steps/Step6OutputGeneration';
-
-/**
- * An array defining the steps of the application.
- * Each object contains an id, title, and description for a step.
- */
-const STEPS = [
-  { id: 1, title: 'Database Config', description: 'Configure database settings' },
-  { id: 2, title: 'Schema Definition', description: 'Define or upload schema' },
-  { id: 3, title: 'ACH Fields', description: 'Configure ACH payment fields' },
-  { id: 4, title: 'Test Cases', description: 'Set up test scenarios' },
-  { id: 5, title: 'Data Generation', description: 'Generate test data' },
-  { id: 6, title: 'Output', description: 'Download generated files' }
-];
+import Step4ProvideAndValidateData from '../components/steps/Step4ProvideAndValidateData';
+import Step5DataRemediation from '../components/steps/Step5DataRemediation';
 
 /**
  * The main component for the home page.
@@ -41,7 +31,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   // State to hold all the application data collected across the steps
   const [appData, setAppData] = useState<AppData>({
-    databaseConfig: { databaseName: '', outputFormat: 'sql' },
+    databaseConfig: { tableName: '', outputFormat: 'ach' },
     schemaDefinition: { method: 'upload', schema: null },
     achFields: { routingNumber: '', accountNumber: '', amount: '', description: '' },
     clearedChecksFields: { bankAccountNumber: '', checkNumber: '', amount: '', date: '' },
@@ -49,6 +39,37 @@ export default function Home() {
     generatedData: null,
     outputFiles: null
   });
+
+  /**
+   * An array defining the steps of the application.
+   * Each object contains an id, title, and description for a step.
+   */
+  const getSteps = () => {
+    const steps = [
+      { id: 1, title: 'File Selection', description: 'Select database and file type' },
+      { id: 2, title: 'Schema Definition', description: 'Define or upload schema' },
+      { id: 3, title: 'ACH Fields', description: 'Configure ACH payment fields' },
+      { id: 4, title: 'Test Cases', description: 'Set up test scenarios' },
+      { id: 5, title: 'Test Data Queries', description: 'Generate test data' },
+      { id: 6, title: 'Output', description: 'Download generated files' }
+    ];
+
+    if (appData.databaseConfig.outputFormat === 'cleared-check') {
+      const clearedCheckSteps = [
+        steps[0], // Step 1: File Selection
+        { ...steps[3], id: 2 }, // Step 2: Test Cases
+        { ...steps[4], id: 3 }, // Step 3: Test Data Queries
+        { id: 4, title: 'Provide and Validate Data', description: 'Paste and validate data' },
+        { id: 5, title: 'Data Remediation', description: 'Fix missing test cases' },
+        steps[5], // Step 6: Output
+      ];
+      return clearedCheckSteps;
+    }
+
+    return steps;
+  };
+
+  const STEPS = getSteps();
 
   /**
    * `useEffect` hook to load saved data from localStorage when the component mounts.
@@ -68,6 +89,7 @@ export default function Home() {
         setError('Failed to load saved data. Starting fresh.');
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
@@ -163,18 +185,36 @@ export default function Home() {
         isComplete: isStepComplete(currentStep)
       };
 
+      if (appData.databaseConfig.outputFormat === 'cleared-check') {
+        switch (currentStep) {
+          case 1:
+            return <Step1FileSelection {...commonProps} />;
+          case 2:
+            return <Step2SchemaDefinition {...commonProps} />; // Test Cases
+          case 3:
+            return <Step5DataGeneration {...commonProps} />; // Test Data Queries
+          case 4:
+            return <Step4ProvideAndValidateData {...commonProps} />;
+          case 5:
+            return <Step5DataRemediation {...commonProps} />;
+          case 6:
+            return <Step6OutputGeneration {...commonProps} />;
+          default:
+            return <div>Step not found</div>;
+        }
+      }
+
+      // Default flow for ACH and other types
       switch (currentStep) {
         case 1:
-          return <Step1DatabaseConfig {...commonProps} />;
+          return <Step1FileSelection {...commonProps} />;
         case 2:
           return <Step2SchemaDefinition {...commonProps} />;
         case 3:
           return <Step3ACHFields {...commonProps} />;
         case 4:
-          return <Step4TestCaseConfig {...commonProps} />;
-        case 5:
           return <Step5DataGeneration {...commonProps} />;
-        case 6:
+        case 5:
           return <Step6OutputGeneration {...commonProps} />;
         default:
           return <div>Step not found</div>;
@@ -206,23 +246,23 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       {/* Header Section */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-white dark:bg-gray-800 shadow-sm border-b dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 Payment Tester
               </h1>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 Generate payment test data and database insert statements
               </p>
             </div>
             <div className="flex items-center space-x-6">
               <button
                 type="button"
-                className="px-4 py-2 rounded-[6px] font-semibold border border-[#004F71] text-[#004F71] bg-white hover:bg-[#004F71] hover:text-white transition-all duration-150 shadow-sm"
+                className="px-4 py-2 rounded-[6px] font-semibold border border-[#004F71] text-[#004F71] bg-white hover:bg-[#004F71] hover:text-white transition-all duration-150 shadow-sm dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
                 onClick={() => {
                   localStorage.removeItem('achPaymentTesterData');
                   window.location.reload();
@@ -231,16 +271,17 @@ export default function Home() {
                 Start Over
               </button>
               <div className="text-right">
-                <div className="text-sm font-bold text-gray-900">Step {currentStep} of {STEPS.length}</div>
+                <div className="text-sm font-bold text-gray-900 dark:text-white">Step {currentStep} of {STEPS.length}</div>
                 <ProgressBar currentStep={currentStep} totalSteps={6} />
               </div>
+              
             </div>
           </div>
         </div>
       </div>
 
       {/* Step Indicator Navigation Bar */}
-      <div className="bg-white border-b">
+      <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <StepIndicator
             steps={STEPS}
@@ -285,7 +326,7 @@ export default function Home() {
 
       {/* Main Content Area where the current step is rendered */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
           {renderCurrentStep()}
         </div>
       </div>

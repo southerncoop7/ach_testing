@@ -27,11 +27,11 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
 
   return (
     <div className="w-full">
-      <div className="flex justify-end text-sm text-gray-600 mb-1">
+      <div className="flex justify-end text-sm text-gray-600 dark:text-gray-400 mb-1">
         {/* Display the rounded percentage */}
         <span>{Math.round(percentage)}% Complete</span>
       </div>
-      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
         {/* The colored part of the progress bar, its width is set by the percentage. */}
         <div
           className="bg-success h-2 rounded-full transition-all duration-500 ease-out"

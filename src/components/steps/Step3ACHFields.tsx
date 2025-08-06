@@ -31,7 +31,7 @@ export default function Step3ACHFields({
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   // Determine if the current mode is for "Cleared Checks" based on the output format.
-  const isClearedChecks = data.databaseConfig.outputFormat === 'cleared-checks';
+  const isClearedChecks = data.databaseConfig.outputFormat === 'cleared-check';
 
   /**
    * Configuration for the "Cleared Checks" fields.
@@ -119,10 +119,10 @@ export default function Step3ACHFields({
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
           Test Data Configuration
         </h2>
-        <p className="text-gray-600">
+        <p className="text-gray-600 dark:text-gray-400">
           {isClearedChecks
             ? 'Enter base values for the Cleared Checks data. Leave fields blank to have them auto-generated.'
             : 'Configure the ACH payment fields for test data generation.'}
@@ -174,23 +174,23 @@ export default function Step3ACHFields({
           </>
         )}
 
-        <div className="bg-[#E6F1F5] border border-[#B3D6E6] rounded-lg p-4">
-          <h3 className="text-sm font-medium text-[#004F71] mb-2">
+        <div className="bg-[#E6F1F5] border border-[#B3D6E6] rounded-lg p-4 dark:bg-gray-700 dark:border-gray-600">
+          <h3 className="text-sm font-medium text-[#004F71] dark:text-white mb-2">
             Field Guidelines
           </h3>
-          <ul className="text-sm text-[#004F71] space-y-1">
+          <ul className="text-sm text-[#004F71] dark:text-gray-300 space-y-1">
             {isClearedChecks ? (
               <>
                 <li><strong>Bank Account Number:</strong> 13 digits, will be left-padded with zeros.</li>
                 <li><strong>Check Number:</strong> 10 digits, will be left-padded with zeros.</li>
-                <li><strong>Amount:</strong> 10 digits, no decimal (e.g., $123.45 is entered as "12345").</li>
+                <li><strong>Amount:</strong> 10 digits, no decimal (e.g., $123.45 is entered as &quot;12345&quot;).</li>
                 <li><strong>Date:</strong> 6 digits in MMDDYY format.</li>
                 <li>Any field left blank will be auto-generated with valid data.</li>
               </>
             ) : (
               <>
                 <li><strong>Routing Number:</strong> A 9-digit ABA routing number.</li>
-                <li><strong>Account Number:</strong> The customer's bank account number.</li>
+                <li><strong>Account Number:</strong> The customer&apos;s bank account number.</li>
                 <li><strong>Amount:</strong> The payment amount in dollars and cents.</li>
                 <li><strong>Description:</strong> An optional description for the payment.</li>
               </>
@@ -199,7 +199,7 @@ export default function Step3ACHFields({
         </div>
       </div>
 
-      <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
+      <div className="flex justify-between mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
         <Button variant="secondary" onClick={onPrevious}>
           Previous
         </Button>
@@ -210,7 +210,7 @@ export default function Step3ACHFields({
             !isClearedChecks && (!data.achFields.routingNumber || !data.achFields.accountNumber || !data.achFields.amount)
           }
         >
-          Next: Test Cases
+          Next: Data Generation
         </Button>
       </div>
     </div>
